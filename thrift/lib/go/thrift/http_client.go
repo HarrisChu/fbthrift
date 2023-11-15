@@ -18,6 +18,7 @@ package thrift
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -166,6 +167,9 @@ func (p *HTTPClient) IsOpen() bool {
 func (p *HTTPClient) closeResponse() error {
 	p.response = nil
 	p.responseBuffer.Reset()
+	if p.responseBuffer.Cap() > 2*1024*1024*1024 {
+		p.responseBuffer = bytes.Buffer{}
+	}
 	return nil
 }
 
@@ -209,6 +213,7 @@ func (p *HTTPClient) Flush() error {
 	// Close any previous response body to avoid leaking connections.
 	p.closeResponse()
 
+	fmt.Printf("response cap: %d \n", p.responseBuffer.Cap())
 	req, err := http.NewRequest("POST", p.url.String(), p.requestBuffer)
 	if err != nil {
 		return NewTransportExceptionFromError(err)
